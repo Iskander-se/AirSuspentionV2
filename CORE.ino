@@ -3,7 +3,7 @@ byte defDeltaSuspention = 21;
 void fLevelBain()
 {
   int16_t frontDeviation= (curSuspention[0].Avg + curSuspention[1].Avg) - PresetLevels[0]*20;
-  int16_t rearDeviation = (curSuspention[2].Avg + curSuspention[3].Avg) - PresetLevels[0]*20;
+  int16_t rearDeviation = (curSuspention[2].Avg + curSuspention[3].Avg) - PresetLevels[1]*20;
   int16_t twixDelta = frontDeviation - rearDeviation;
   int16_t targetLevels[4]={PresetLevels[0]*10,PresetLevels[0]*10,PresetLevels[1]*10,PresetLevels[1]*10};
   //int16_t frontDelta= (curSuspention[0].Delta+curSuspention[1].Delta)/2;
@@ -13,7 +13,15 @@ void fLevelBain()
   byte intentRDelta = curSuspention[2].Delta+curSuspention[3].Delta;
   int16_t heelFront =curSuspention[0].Avg - curSuspention[1].Avg;
   int16_t heelRear =curSuspention[2].Avg - curSuspention[3].Avg;
+  byte blurF=5;
+  byte blurR=5;
 
+  //blur if extra suspension position
+  if((curSuspention[0].Max>1000)||(curSuspention[1].Max>1000)) {frontDeviation=frontDeviation-cWarningArr.Levels*blurF; blurF=2;};
+  if((curSuspention[2].Max>1000)||(curSuspention[3].Max>1000)) {rearDeviation=frontDeviation-cWarningArr.Levels*blurR;  blurR=2;};
+  if((curSuspention[0].Min<0)||(curSuspention[1].Min<0)) frontDeviation=frontDeviation+cWarningArr.Levels*blurF;
+  if((curSuspention[2].Min<0)||(curSuspention[3].Min<0)) rearDeviation=frontDeviation+cWarningArr.Levels*blurR;
+  
   ///////SERVICEMOD ===========
   //Нужна скорейшая реакция
   if(servicemode){
@@ -164,6 +172,7 @@ void fSUBcore() {
 }
 
 void fVAGBlockWork() {
+  if((ValveSet.RELAY!=4&&tasker1%2)||(tasker1==2)) SerialWorkSend2HU(ValveSet);
   GetPressure();
   if(ValveSet.FL||ValveSet.FR||ValveSet.RL||ValveSet.RR){
       switch (ValveSet.RELAY){

@@ -1,6 +1,3 @@
-#include <Adafruit_ADS1015.h>
-Adafruit_ADS1115 ADC_P(0x48);
-Adafruit_ADS1115 ADC_B(0x49);
 
 void Get_RAW_LS(){     
       curSuspention[0].RAW=ADC_B.readADC_SingleEnded(1)/24;
@@ -69,8 +66,8 @@ void CalcLevels()
     if(curSuspention[i].Max>1020) alertHiFlags[i]++; else alertHiFlags[i]=0; //сранение с верхним пределом  
     if(curSuspention[i].Min<-20)  alertLoFlags[i]++; else alertLoFlags[i]=0; //сранение с нижним пределом
 
-    if((alertHiFlags[i]>3)&&!servicemode) { alertHiFlags[i]=0; cWarningArr.Levels++;}
-    if((alertLoFlags[i]>3)&&!servicemode) { alertLoFlags[i]=0; cWarningArr.Levels++;}
+    if((alertHiFlags[i]>5)&&!servicemode) { alertHiFlags[i]=0; cWarningArr.Levels++;}
+    if((alertLoFlags[i]>5)&&!servicemode) { alertLoFlags[i]=0; cWarningArr.Levels++;}
   }
 }
 

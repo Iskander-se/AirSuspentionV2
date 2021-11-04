@@ -68,6 +68,17 @@ void SerialLevelSend2HU(char nom, int8_t cLevels[4]) {
     Serial.flush();
 }
 
+void SerialWorkSend2HU(valveSetBstruct ValveSet){
+    Serial.print("@w:b:");
+    Serial.print(ValveSet.RELAY);
+    Serial.print(ValveSet.FL);
+    Serial.print(ValveSet.FR);
+    Serial.print(ValveSet.RL);
+    Serial.print(ValveSet.RR);
+    Serial.print(ValveSet.WP);
+    Serial.println("^");
+    Serial.flush();
+}
 
 
 void SerialAlertSend2HU(String pp, String str){

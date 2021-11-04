@@ -1,4 +1,5 @@
 #include <LiquidCrystal_I2C_OLED.h>
+#include <Adafruit_ADS1X15.h>
 #include <EEPROM.h> 
 
 #define DEBUG
@@ -21,7 +22,10 @@ const int vFL = 5;
 
 
 ////////// Constants
+#define ADCadrP 0x48
+#define ADCadrB 0x49
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+Adafruit_ADS1115 ADC_P, ADC_B;
 byte up[] =   {  B00000,  B00100,  B01110,  B10101,  B00100,  B00100,  B00000,  B00000};
 byte down[] = {  B00000,  B00000,  B00100,  B00100,  B10101,  B01110,  B00100,  B00000};
 const byte levelHwAddress[3]={4,12,20};          // Переменная для хранения первых адресов
@@ -146,6 +150,17 @@ void setup() {
   lcd.print("Air Suspention");  
   lcd.createChar(0, up);
   lcd.createChar(1, down);
+
+  while(!ADC_P.begin(ADCadrP)||!ADC_B.begin(ADCadrB)){
+        Serial.print("ads1115 init failed!!!");
+        lcd.setCursor(1,1); 
+        lcd.print("Air Suspention");  
+        delay(500);
+        SerialAlertSend2HU("cs", "ads1115 init failed!!!");
+        delay(500);
+        tone(piezoPin, 1100, 110);
+    }
+  
   GetPressure();
   if(manual) {
      delay(150);
@@ -181,12 +196,12 @@ if(WAIT>0) WAIT--;
       if(!manual&&!menu)fSUBcore();
       CheckWarnings();
   }
-
+  tasker1++;
   if(tasker1>16){
       CheckAlerts();
       tasker1=0;
   }
-  tasker1++;
+  
 
   GetKey();
   
@@ -226,15 +241,15 @@ if(WAIT>0) WAIT--;
                 fVAGBlockWork();                
                 break;  
               case 'g':  ////////////////////////////////////////////////////// ////////////////////////////////////
-                //fGetCurValues(packFromHU);
+                // TODO Get system value 
                 break;
               case 'v':  ////////////////////////////////////////////////////// ////////////////////////////////////
-                //fGetCurValues(packFromHU);
+                // TODO Set system value 
                 break;            
               case 'c':  ////////////////////////////////////////////////////// ////////////////////////////////////
                 if(packFromHU.nom==49){  //'a'   clear alerts
                   String stringOne = String((char *)packFromHU.data); 
-                  ConfirmAlerts(stringOne)
+                  ConfirmAlerts(stringOne);
                 }
                 break;
            }

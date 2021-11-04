@@ -18,38 +18,56 @@ void CheckAlerts(){
 }
 
 void ConfirmAlerts(String stringOne){
-  if(cAlertArr.Power.flag)  SerialAlertSend2HU("pc", cAlertArr.Power.dump);
-  if(cAlertArr.Levels.flag)  SerialAlertSend2HU("lv", cAlertArr.Levels.dump);
-  if(cAlertArr.Valves.flag)  SerialAlertSend2HU("vb", cAlertArr.Valves.dump);
-  if(cAlertArr.BanksF.flag)  SerialAlertSend2HU("bf", cAlertArr.BanksF.dump);
-  if(cAlertArr.BanksR.flag)  SerialAlertSend2HU("br", cAlertArr.BanksR.dump);
+  if(stringOne=="pc")  {
+    SerialAlertSend2HU("pc", cAlertArr.Power.dump);
+  }
+  if(stringOne=="lv")  {
+    SerialAlertSend2HU("lv", cAlertArr.Levels.dump);
+  }
+  if(stringOne=="vb")  {
+    cWarningArr.Valves=0;
+    cAlertArr.Valves.flag=false;
+  }
+  if(stringOne=="bf")  {
+    SerialAlertSend2HU("bf", cAlertArr.BanksF.dump);
+  }
+  if(stringOne=="br")  {
+    SerialAlertSend2HU("br", cAlertArr.BanksR.dump);
+  }
 }
 
 void CheckWarnings()
 {
   String stringOne = "";
-  if(cWarningArr.Levels>6&&!cAlertArr.Levels.flag) {
-     cAlertArr.Levels.flag=true;
-     for(int i=0;i<4;i++){
-        stringOne=String(stringOne+"["+String(curSuspention[i].Min, DEC)+":"+String(curSuspention[i].Max, DEC)+"],");
-     }
-     cAlertArr.Levels.dump=String(stringOne+":"+String(Pressure.VAG, DEC)); 
-     SetManualMode();
+  if(cWarningArr.Levels>0) cWarningArr.Levels--;
+  if(cWarningArr.Levels>8) {
+    cWarningArr.Levels=0;
+    if(!cAlertArr.Levels.flag){
+       cAlertArr.Levels.flag=true;
+       for(int i=0;i<4;i++){
+          stringOne=String(stringOne+"["+String(curSuspention[i].Min, DEC)+":"+String(curSuspention[i].Max, DEC)+"],");
+       }
+       cAlertArr.Levels.dump=String(stringOne+":"+String(Pressure.VAG, DEC)); 
+       SetManualMode();
+    }
   }  
 
-  if(cWarningArr.Power>6&&!cAlertArr.Power.flag) {
+  if(cWarningArr.Power>6) {
      cAlertArr.Power.flag=true;
      stringOne=String(Pressure.VAG, DEC); 
      cAlertArr.Power.dump=String(stringOne+":"+String(Pressure.RES, DEC)); 
   }  
 
   //Ошибка отсутствия реакции - это страшно всегда.
-  if(cWarningArr.Valves>15&&!cAlertArr.Valves.flag) {
-     cAlertArr.Valves.flag=true;
-     stringOne=String(Pressure.VAG,DEC);
-     stringOne=stringOne+"["+String(ValveSet.FL,DEC)+":"+String(ValveSet.FR,DEC)+":"+String(ValveSet.RL,DEC)+":"+String(ValveSet.RR,DEC)+"::"+String(ValveSet.RELAY,DEC)+":"+String(ValveSet.WP,DEC)+"]"+String(Pressure.RES,DEC); 
-     cAlertArr.Valves.dump=stringOne;
-     SetManualMode();
+  if(cWarningArr.Valves>15) {
+    cWarningArr.Valves=0;
+    if(!cAlertArr.Valves.flag){
+       cAlertArr.Valves.flag=true;
+       stringOne=String(Pressure.VAG,DEC);
+       stringOne=stringOne+"["+String(ValveSet.FL,DEC)+":"+String(ValveSet.FR,DEC)+":"+String(ValveSet.RL,DEC)+":"+String(ValveSet.RR,DEC)+"::"+String(ValveSet.RELAY,DEC)+":"+String(ValveSet.WP,DEC)+"]"+String(Pressure.RES,DEC); 
+       cAlertArr.Valves.dump=stringOne;
+       SetManualMode();
+    }
   }  
   if(servicemode) {
     if(cWarningArr.BanksF>1&&IntentSetBL.CurRELAY == 3) {cWarningArr.BanksF=0; cWarningArr.Valves=0; waitLowUpF=true;}
@@ -57,21 +75,27 @@ void CheckWarnings()
     return;
   } //Если в SERVICEMOD то все допустимо и дальше не смотрим
   
-  if(cWarningArr.BanksF>3&&!cAlertArr.BanksF.flag) {
-    cAlertArr.BanksF.flag=true;
-    stringOne=String(Pressure.VAG,DEC);
-    stringOne=stringOne+"["+String(curSuspention[0].Avg,DEC);
-    stringOne=stringOne+":"+String(curSuspention[1].Avg,DEC)+"]"; 
-    cAlertArr.BanksF.dump=String(stringOne+":"+String(Pressure.RES, DEC)); 
-    SetManualMode();
+  if(cWarningArr.BanksF>3) {
+    cWarningArr.BanksF=0;
+    if(!cAlertArr.BanksF.flag){
+      cAlertArr.BanksF.flag=true;
+      stringOne=String(Pressure.VAG,DEC);
+      stringOne=stringOne+"["+String(curSuspention[0].Avg,DEC);
+      stringOne=stringOne+":"+String(curSuspention[1].Avg,DEC)+"]"; 
+      cAlertArr.BanksF.dump=String(stringOne+":"+String(Pressure.RES, DEC)); 
+      SetManualMode();
+    }
   }
-  if(cWarningArr.BanksR>3&&!cAlertArr.BanksR.flag) {
-    cAlertArr.BanksR.flag=true;
-    stringOne=String(Pressure.VAG,DEC);
-    stringOne=stringOne+"["+String(curSuspention[2].Avg,DEC);
-    stringOne=stringOne+":"+String(curSuspention[3].Avg,DEC)+"]"; 
-    cAlertArr.BanksR.dump=stringOne; 
-    SetManualMode();
+  if(cWarningArr.BanksR>3) {
+    cWarningArr.BanksR=0;
+    if(!cAlertArr.BanksR.flag){
+      cAlertArr.BanksR.flag=true;
+      stringOne=String(Pressure.VAG,DEC);
+      stringOne=stringOne+"["+String(curSuspention[2].Avg,DEC);
+      stringOne=stringOne+":"+String(curSuspention[3].Avg,DEC)+"]"; 
+      cAlertArr.BanksR.dump=String(stringOne+":"+String(Pressure.RES, DEC));  
+      SetManualMode();
+    }
   }
   
 
