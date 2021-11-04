@@ -35,12 +35,14 @@ int8_t PresetLevels[2]={50,50};
 int8_t nomPreset=0; 
 bool manual=false;
 bool servicemode=false;
+bool waitLowUpF=false;
+bool waitLowUpR=false;
 byte alertHiFlags[4];
 byte alertLoFlags[4];
 int16_t LowLevels[4]={200,934,925,196}; 
 int16_t HighLevels[4]={967,194,187,930}; 
 int16_t curArr[4];
-int16_t engineCount=0, brakeCount=0, tasker1=0;
+int16_t engineCount=0, brakeCount=0, tasker1=0, tasker2=0;
 struct stJack {
   int16_t RAW;
   int16_t Min; 
@@ -66,6 +68,20 @@ struct WarningArray {
     byte Power=0;
 } cWarningArr;
 
+struct Alert {
+  bool flag=false;
+  String dump="";
+};
+
+struct AlertArray {
+    Alert Levels;
+    Alert Valves;
+    Alert BanksF;
+    Alert BanksR;
+    Alert Power;
+    Alert RES;
+} cAlertArr;
+
 struct valveSetBstruct {
   bool FL; bool FR;
   bool RL; bool RR;
@@ -89,6 +105,7 @@ struct SerialPack {
     char command;
     byte nom;
     int8_t data[4];
+    char str[2];
 };
 SerialPack packFromHU;
 
@@ -118,6 +135,7 @@ void setup() {
   manual=(EEPROM.read(ManualAddr)==1);
   nomPreset=EEPROM.read(PresetAddr);
   GetLevelHwSetup(); // Инициализация записаных значений
+  GetLevelPreset(nomPreset);
   lcd.init();
   lcd.clear();
   delay(150);
@@ -139,6 +157,8 @@ void setup() {
   for(byte i=0;i<20;i++)CalcLevels();
   lcd.clear();
 
+  for(byte i=0;i<4;i++) alertHiFlags[i]=0;
+  for(byte i=0;i<4;i++) alertLoFlags[i]=0;
 }
 
 
@@ -158,13 +178,15 @@ if(WAIT>0) WAIT--;
   GetPressure();
   CheckWarnings();
   
-  if(!manual&&!menu) {
-    if(tasker1>10){
+  if(!manual&&!menu&&(tasker1==8||tasker1==16)){
       fSUBcore();
-      tasker1=0;
-    }
-    tasker1++;
   }
+
+  if(tasker1>16){
+      CheckAlerts();
+      tasker1=0;
+  }
+  tasker1++;
 
   GetKey();
   
@@ -210,8 +232,9 @@ if(WAIT>0) WAIT--;
                 //fGetCurValues(packFromHU);
                 break;            
               case 'c':  ////////////////////////////////////////////////////// ////////////////////////////////////
-                if(packFromHU.nom==49){  //'a'   clear alerts 
-                      //AlertFlagsArr.Banks=false;    AlertFlagsArr.HiLevels=false; AlertFlagsArr.LoLevels=false;  AlertFlagsArr.Power=false; AlertFlagsArr.Curr=false;
+                if(packFromHU.nom==49){  //'a'   clear alerts
+                  String stringOne = String((char *)packFromHU.data); 
+                  ConfirmAlerts(stringOne)
                 }
                 break;
            }
@@ -225,11 +248,59 @@ if(WAIT>0) WAIT--;
     {
       lcd.setCursor(5,1); lcd.print("SEVICE ");
     }
-    else if(manual) {
-      //if(ValveSet.WP==1) {
-        lcd.setCursor(5,0); lcd.print(Pressure.VAG);lcd.print(" ");lcd.print(ValveSet.RELAY);lcd.print("-");lcd.print(IntentSetBL.HOPE);
-        lcd.setCursor(5,1); lcd.print(Pressure.RES);lcd.print(" ");lcd.print(AirPower.RELAY);lcd.print("-");lcd.print(cWarningArr.Power);
-      //}
+
+    if(manual&&tasker1%2)
+              if(ValveSet.WP==1) {
+                lcd.setCursor(5,0); lcd.print(Pressure.VAG);lcd.print(" M ");
+              }else{
+                lcd.setCursor(5,0); lcd.print(Pressure.VAG);lcd.print("kpa ");
+              }
+              
+    if(tasker1%4==0) { 
+      tasker2++;
+      lcd.setCursor(4,1);
+      switch(tasker2)
+        {
+          case 1:
+              if(cAlertArr.Valves.flag) {
+                lcd.print("VAG ERR!");
+                tasker2=1;
+                break;
+              }
+          case 2:
+              if(cAlertArr.BanksF.flag) {
+                lcd.print("FB ERR! ");
+                tasker2=2;
+                break;
+              }
+          case 3:
+              if(cAlertArr.BanksR.flag) {
+                lcd.print("RB ERR! ");
+                tasker2=3;
+                break;
+              }
+          case 4:
+              if(cAlertArr.Power.flag) {
+                lcd.print("AIReRR! ");
+                tasker2=4;
+                break;
+              }
+          case 5:
+              if(cAlertArr.RES.flag) {
+                lcd.print("RESeRR!");
+                tasker2=5;
+                break;
+              }
+          default:
+              if(ValveSet.WP==1) {                
+                if(manual) {lcd.print(Pressure.RES);lcd.print(" ");lcd.print(AirPower.RELAY);lcd.print("-");lcd.print(cWarningArr.Power);}
+              }else{
+                if(manual) lcd.print("Manual ");
+                else lcd.print("       ");
+              }
+              tasker2=0;
+        }
+        if(tasker2&&!mute)tone(piezoPin, 1100, 110);
     }
 
     

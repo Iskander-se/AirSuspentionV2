@@ -14,15 +14,19 @@ void fLevelBain()
   int16_t heelFront =curSuspention[0].Avg - curSuspention[1].Avg;
   int16_t heelRear =curSuspention[2].Avg - curSuspention[3].Avg;
 
+  ///////SERVICEMOD ===========
+  //Нужна скорейшая реакция
   if(servicemode){
     intentFDelta=0;
     intentRDelta=0;
   }
 
-  // twixDelta //// front < 0 < rear 
-
+  // twixDelta //// front < 0 < rear   
+  // _Deviation - отклонение от плана
+  // intent_Delta - minimax дребезг
+  // twixDelta - разница отклонений от планам по осям
   
-  if ((frontDeviation < -defDeltaSuspention) || (rearDeviation < -defDeltaSuspention)) {  //    _ x _   /////////////////////////////////////
+  if ((frontDeviation < -defDeltaSuspention) || (rearDeviation < -defDeltaSuspention)) {  //    _ x _   ///////////////////////////////////// если низко
       //    _ x ~   /////////////////////////////////////      
       if ((twixDelta < 0 && intentFDelta < absFDeviation) || (twixDelta < defDeltaSuspention*3 && IntentSetBL.CurRELAY == 1)){
         IntentSetBL.FL+=(curSuspention[0].Avg<targetLevels[0])? 1 : -2;
@@ -38,9 +42,9 @@ void fLevelBain()
         IntentSetBL.CurRELAY = 2;
       }
       
-  } else if ((frontDeviation > defDeltaSuspention) || (rearDeviation > defDeltaSuspention)) { //   ^ x ^   /////////////////////////////////////
+  } else if ((frontDeviation > defDeltaSuspention) || (rearDeviation > defDeltaSuspention)) { //   ^ x ^   ///////////////////////////////////// если высоко
        //    ^ x -   /////////////////////////////////////
-      if ((twixDelta > 0 && intentFDelta < absFDeviation) || (twixDelta > -defDeltaSuspention*3 && IntentSetBL.CurRELAY == 3)){
+      if ((twixDelta > 0 && intentFDelta < absFDeviation) || (twixDelta > -defDeltaSuspention*3 && IntentSetBL.CurRELAY == 3)|| (waitLowUpR&&!waitLowUpF)){
         IntentSetBL.FL+=(curSuspention[0].Avg>targetLevels[0])? 1 : -2;
         IntentSetBL.FR+=(curSuspention[1].Avg>targetLevels[1])? 1 : -2; 
         IntentSetBL.RL=0; 
@@ -87,7 +91,7 @@ void fLevelBain()
 }
 
 void fSUBcore() {
-  int suff=10;
+  int suff=2;
   // 1: Front up;    2: Rear up;     3: Front down;    4: Rear down;
   ValveSet.CR=ValveSet.RELAY;
 
@@ -103,39 +107,32 @@ void fSUBcore() {
   switch (IntentSetBL.CurRELAY)
   {
     case 1 : // Front up
-        if (Pressure.VAG > 280 && Pressure.VAG < 760) ValveSet.RELAY = 1;  
-        else{ValveSet.RELAY = 0; IntentSetBL.HOPE++; lcd.setCursor(4,1); lcd.print("AlarmFU"); if(IntentSetBL.HOPE>suff) cWarningArr.BanksF++; }      
+        if (Pressure.VAG > 150 && Pressure.VAG < 760) ValveSet.RELAY = 1;  
+        else{ValveSet.RELAY = 0; IntentSetBL.HOPE++; if(IntentSetBL.HOPE>suff) cWarningArr.BanksF++; }      
       break;
     case 2:  // Rear up
-        if (Pressure.VAG > 180 && Pressure.VAG < 430) ValveSet.RELAY = 1;
-        else{ValveSet.RELAY = 0; IntentSetBL.HOPE++; lcd.setCursor(4,1); lcd.print("AlarmRU"); if(IntentSetBL.HOPE>suff) cWarningArr.BanksR++; }     
+        if (Pressure.VAG > 140 && Pressure.VAG < 430) ValveSet.RELAY = 1;
+        else{ValveSet.RELAY = 0; IntentSetBL.HOPE++; if(IntentSetBL.HOPE>suff) cWarningArr.BanksR++; }     
       break;
     case 3 : // Front down
-        if (Pressure.VAG > 210) ValveSet.RELAY = 2;
-        else{ValveSet.RELAY = 0; IntentSetBL.HOPE++; lcd.setCursor(4,1); lcd.print("AlarmFD"); if(IntentSetBL.HOPE>suff)cWarningArr.BanksF++; }     
+        if (Pressure.VAG > 200) ValveSet.RELAY = 2;
+        else{ValveSet.RELAY = 0; IntentSetBL.HOPE++; if(IntentSetBL.HOPE>suff)cWarningArr.BanksF++; }     
       break;
     case 4:  // Rear down
         if (Pressure.VAG > 180) ValveSet.RELAY = 2;
-        else{ValveSet.RELAY = 0; IntentSetBL.HOPE++; lcd.setCursor(4,1); lcd.print("AlarmRD"); if(IntentSetBL.HOPE>suff) cWarningArr.BanksR++; }     
+        else{ValveSet.RELAY = 0; IntentSetBL.HOPE++; if(IntentSetBL.HOPE>suff) cWarningArr.BanksR++; }     
       break;
     default:
         IntentSetBL.HOPE = 0;
         ValveSet.RELAY = 4;
   }
-  if(ValveSet.RELAY<3) cWarningArr.Valves++;
+  
   if(cWarningArr.BanksF>0||cWarningArr.BanksR>0) {
-    lcd.setCursor(4,0);  if(IntentSetBL.HOPE>suff) lcd.print(Pressure.VAG); lcd.print(" "); 
+      lcd.setCursor(4,0);  lcd.print(" "); lcd.print(Pressure.VAG); lcd.print(" "); lcd.print(IntentSetBL.CurRELAY);lcd.print("A");
   }
-  if(ValveSet.CR!=ValveSet.RELAY) { cWarningArr.Valves=0; IntentSetBL.HOPE = 0;}
-  else cWarningArr.Valves++;
+  if(ValveSet.CR!=ValveSet.RELAY&&ValveSet.RELAY==4) { cWarningArr.Valves=0; IntentSetBL.HOPE = 0;}
+  else if((ValveSet.RELAY==1)||(ValveSet.RELAY==2)) cWarningArr.Valves++;
 
-
-  
-  //Serial.print(Pressure.VAG); Serial.print(" "); Serial.println(Pressure.RES);
-  //Serial.print("CurRELAY");Serial.print(ValveSet.RELAY);Serial.print(" ");Serial.print(IntentSetBL.FL);Serial.print(":");Serial.print(IntentSetBL.FR);Serial.print(":");Serial.print(IntentSetBL.RL);Serial.print(":");Serial.print(IntentSetBL.RR);
-  //Serial.print("  ValveSet.RELAY"); Serial.print(ValveSet.RELAY); Serial.print("  IntentSetBL.HOPE "); Serial.print(IntentSetBL.HOPE); Serial.print(" AirPower.Time"); Serial.print(AirPower.Time); Serial.print("  cWarningArr.Power"); Serial.print(cWarningArr.Power);
-  //Serial.println("");
-  
   if(IntentSetBL.FL>3) ValveSet.FL=1;
   else if(IntentSetBL.FL<2) ValveSet.FL=0;
   if(IntentSetBL.FR>3) ValveSet.FR=1;
@@ -144,6 +141,25 @@ void fSUBcore() {
   else if(IntentSetBL.RL<2) ValveSet.RL=0;
   if(IntentSetBL.RR>3) ValveSet.RR=1;
   else if(IntentSetBL.RR<2) ValveSet.RR=0;
+
+  ///////SERVICEMOD ===========
+  ////   3: Front down;    4: Rear down;
+  //Разгрузка подушек висящих на подьемнике или домкрате
+  if(waitLowUpF&&(IntentSetBL.CurRELAY == 3)) {
+    ValveSet.FL=0; ValveSet.FR=0;
+    ValveSet.RELAY=0;
+    cWarningArr.Valves=0;
+  }
+  if(waitLowUpR&&(IntentSetBL.CurRELAY == 4)) {
+    ValveSet.RL=0; ValveSet.RR=0;
+    ValveSet.RELAY=0;
+    cWarningArr.Valves=0;
+  }
+
+  if(Pressure.VAG>350){
+    waitLowUpF=false;
+    waitLowUpR=false;
+  }
   
 }
 
@@ -159,10 +175,10 @@ void fVAGBlockWork() {
               } else if (Pressure.RES < 630) { ///  Работаем без рессивера
                 digitalWrite(vRES, 0);
                 digitalWrite(vPC, 1);
-              } else {
+              } else {// Компрессор + рессивер
                 ValveSet.WP=1;
                 digitalWrite(vRES, 1);                
-                digitalWrite(vPC, AirPower.RELAY); // Компрессор + рессивер
+                digitalWrite(vPC, AirPower.RELAY); 
               }
               break;
           case 2:  //DOWN
@@ -230,14 +246,14 @@ void fCompressorTimer() {
     }
   }   
   else {
-    if (AirPower.Time < 2) AirPower.RELAY = true;
+    if (AirPower.Time < 2) {AirPower.RELAY = true; if(!ValveSet.WP&&cWarningArr.Power>0) cWarningArr.Power--;}
     else AirPower.Time--;
   }
 }
 
 void fChargeRES()
 {
-  if (Pressure.RES > 980 && ValveSet.RELAY != 3) {
+  if (Pressure.RES > 960 && ValveSet.RELAY != 3) {
     ValveSet.WP=0;
     lcd.setCursor(5,1);
     lcd.print("        ");    
@@ -245,7 +261,9 @@ void fChargeRES()
     digitalWrite(vRES, 0);
     digitalWrite(vPC, 0);
     delay(800);
-    if(cWarningArr.Power>0) cWarningArr.Power-=4;
+    if(cWarningArr.Power>0) cWarningArr.Power--;
+    if(cWarningArr.Power>0) cWarningArr.Power--;
+    if(cWarningArr.Power>0) cWarningArr.Power--;
     digitalWrite(vEXH, 0);
     digitalWrite(vRES, 0);
     digitalWrite(vPC, 0);

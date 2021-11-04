@@ -8,32 +8,83 @@ byte Dchar2hex(char ch1,char ch2){
   return val;
 }
 
+
+void CheckAlerts(){
+  if(cAlertArr.Power.flag)  SerialAlertSend2HU("pc", cAlertArr.Power.dump);
+  if(cAlertArr.Levels.flag)  SerialAlertSend2HU("lv", cAlertArr.Levels.dump);
+  if(cAlertArr.Valves.flag)  SerialAlertSend2HU("vb", cAlertArr.Valves.dump);
+  if(cAlertArr.BanksF.flag)  SerialAlertSend2HU("bf", cAlertArr.BanksF.dump);
+  if(cAlertArr.BanksR.flag)  SerialAlertSend2HU("br", cAlertArr.BanksR.dump);
+}
+
+void ConfirmAlerts(String stringOne){
+  if(cAlertArr.Power.flag)  SerialAlertSend2HU("pc", cAlertArr.Power.dump);
+  if(cAlertArr.Levels.flag)  SerialAlertSend2HU("lv", cAlertArr.Levels.dump);
+  if(cAlertArr.Valves.flag)  SerialAlertSend2HU("vb", cAlertArr.Valves.dump);
+  if(cAlertArr.BanksF.flag)  SerialAlertSend2HU("bf", cAlertArr.BanksF.dump);
+  if(cAlertArr.BanksR.flag)  SerialAlertSend2HU("br", cAlertArr.BanksR.dump);
+}
+
 void CheckWarnings()
 {
-  if(servicemode) return; //Если SERVICEMOD то все допустимо
-  
-  if(cWarningArr.BanksF>5) {
-    manual=true;
-     EEPROM.update(ManualAddr,1);
-     ValveSet.FL=0;  ValveSet.FR=0;
-     ValveSet.RL=0;  ValveSet.RR=0;
-     ValveSet.RELAY = 0;
-  }
-  if(cWarningArr.BanksR>5) {
-    manual=true;
-     EEPROM.update(ManualAddr,1);
-     ValveSet.FL=0;  ValveSet.FR=0;
-     ValveSet.RL=0;  ValveSet.RR=0;
-     ValveSet.RELAY = 0;
-  }
-  if(cWarningArr.Valves>5) {
-    manual=true;
-     EEPROM.update(ManualAddr,1);
-     ValveSet.FL=0;  ValveSet.FR=0;
-     ValveSet.RL=0;  ValveSet.RR=0;
-     ValveSet.RELAY = 0;
-  }
+  String stringOne = "";
+  if(cWarningArr.Levels>6&&!cAlertArr.Levels.flag) {
+     cAlertArr.Levels.flag=true;
+     for(int i=0;i<4;i++){
+        stringOne=String(stringOne+"["+String(curSuspention[i].Min, DEC)+":"+String(curSuspention[i].Max, DEC)+"],");
+     }
+     cAlertArr.Levels.dump=String(stringOne+":"+String(Pressure.VAG, DEC)); 
+     SetManualMode();
+  }  
 
+  if(cWarningArr.Power>6&&!cAlertArr.Power.flag) {
+     cAlertArr.Power.flag=true;
+     stringOne=String(Pressure.VAG, DEC); 
+     cAlertArr.Power.dump=String(stringOne+":"+String(Pressure.RES, DEC)); 
+  }  
+
+  //Ошибка отсутствия реакции - это страшно всегда.
+  if(cWarningArr.Valves>15&&!cAlertArr.Valves.flag) {
+     cAlertArr.Valves.flag=true;
+     stringOne=String(Pressure.VAG,DEC);
+     stringOne=stringOne+"["+String(ValveSet.FL,DEC)+":"+String(ValveSet.FR,DEC)+":"+String(ValveSet.RL,DEC)+":"+String(ValveSet.RR,DEC)+"::"+String(ValveSet.RELAY,DEC)+":"+String(ValveSet.WP,DEC)+"]"+String(Pressure.RES,DEC); 
+     cAlertArr.Valves.dump=stringOne;
+     SetManualMode();
+  }  
+  if(servicemode) {
+    if(cWarningArr.BanksF>1&&IntentSetBL.CurRELAY == 3) {cWarningArr.BanksF=0; cWarningArr.Valves=0; waitLowUpF=true;}
+    if(cWarningArr.BanksR>1&&IntentSetBL.CurRELAY == 4) {cWarningArr.BanksR=0; cWarningArr.Valves=0; waitLowUpR=true;}
+    return;
+  } //Если в SERVICEMOD то все допустимо и дальше не смотрим
+  
+  if(cWarningArr.BanksF>3&&!cAlertArr.BanksF.flag) {
+    cAlertArr.BanksF.flag=true;
+    stringOne=String(Pressure.VAG,DEC);
+    stringOne=stringOne+"["+String(curSuspention[0].Avg,DEC);
+    stringOne=stringOne+":"+String(curSuspention[1].Avg,DEC)+"]"; 
+    cAlertArr.BanksF.dump=String(stringOne+":"+String(Pressure.RES, DEC)); 
+    SetManualMode();
+  }
+  if(cWarningArr.BanksR>3&&!cAlertArr.BanksR.flag) {
+    cAlertArr.BanksR.flag=true;
+    stringOne=String(Pressure.VAG,DEC);
+    stringOne=stringOne+"["+String(curSuspention[2].Avg,DEC);
+    stringOne=stringOne+":"+String(curSuspention[3].Avg,DEC)+"]"; 
+    cAlertArr.BanksR.dump=stringOne; 
+    SetManualMode();
+  }
+  
+
+}
+
+void SetManualMode()
+{
+    manual=true;
+    mute=false;
+    EEPROM.update(ManualAddr,1);
+    ValveSet.FL=0;  ValveSet.FR=0;
+    ValveSet.RL=0;  ValveSet.RR=0;
+    ValveSet.RELAY = 4;
 }
 
 void GetKey()
@@ -42,7 +93,7 @@ void GetKey()
     tone(piezoPin, 400, 10);
     WAIT=40;
     if(!mute) mute=true;
-    else menu++;
+    menu++;
     
     bs=true;
     mStep=0;

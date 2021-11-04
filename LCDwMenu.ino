@@ -44,6 +44,7 @@ void fLCDmenu()
                 ValveSet.WP=0;
                 ValveSet.RELAY=4; 
                 fVAGBlockWork();
+                WAIT=10;
                 break;
              case 2:  // Выбор пресета
                 nomPreset=nomPreset+mStep;
@@ -121,7 +122,7 @@ void fLCDmenu()
                   lcd.setCursor(1,1); lcd.print("               ");
                   Get4Pressure();
                   lcd.setCursor(5,1); lcd.print(Pressure.RES);lcd.print("kpa"); 
-                  lcd.setCursor(5,0); lcd.print("PRESS");                   
+                  lcd.setCursor(5,0); lcd.print("PRESS ");                   
                   WAIT=1;                 
                   delay(5000);
                 }else{
@@ -130,10 +131,14 @@ void fLCDmenu()
                 }
                 break;
             case 5:  
-                lcd.setCursor(0,0); lcd.print("   MAINTENANCE  ");
+                lcd.setCursor(0,0); lcd.print("  MAIN/SERVICE  ");
                 if(mStep==0){
-                  lcd.setCursor(0,1); lcd.print("  TANK X HWSETS ");
-                  if(WAIT<3) servicemode=true;
+                  lcd.setCursor(0,1); lcd.print(" TANK X HWSETS ");
+                  if(WAIT<3) {
+                    servicemode=true;
+                    manual=false;
+                    EEPROM.update(ManualAddr,0);
+                  }
                 }else{                  
                   delay(300);
                   if(mStep<0) {menu=41;}

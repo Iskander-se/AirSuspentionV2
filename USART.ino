@@ -31,6 +31,14 @@ SerialPack SerialReadHU()
                 cPack.data[0]=Dchar2hex(bufferArr[4], bufferArr[5]);
                 cPack.data[1]=Dchar2hex(bufferArr[6], bufferArr[7]);
               }
+       }else{
+            cPack.nom=bufferArr[2]-'0';
+            if(cPack.command=='c'){ 
+                cPack.data[0]=bufferArr[4];
+                cPack.data[1]=bufferArr[5];
+                cPack.data[2]=0;
+                cPack.data[3]=0;
+                }
        }
        Serial.print("SerialReadHU");Serial.print(cPack.nom);Serial.println("");
   }  
@@ -60,13 +68,12 @@ void SerialLevelSend2HU(char nom, int8_t cLevels[4]) {
     Serial.flush();
 }
 
-void SerialAlertSend2HU(char pp[], int var){
+
+
+void SerialAlertSend2HU(String pp, String str){
     Serial.print("@a:");
-    //Serial.print(pp);Serial.print(":");
-    //Serial.print(var,HEX);
+    Serial.print(pp);Serial.print(":");
+    Serial.print(str);
     Serial.println("^");
     Serial.flush();
 }
-//void fUSART(){
-//  
-//}

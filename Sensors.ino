@@ -16,7 +16,7 @@ void GetPressure()
       
     Pressure.RES=map(ADC_P0, 2650, 23962, 0, 1034);     
     Pressure.VAG=map(ADC_P1, 3394, 8890, 220, 1070);   
-    //if(Pressure.RES<500) fAlarm(2);    
+    if(Pressure.RES<500) {cAlertArr.RES.flag=true; cAlertArr.RES.dump=Pressure.RES; } 
 }
 
 int GetBankPressure(byte bank)
@@ -57,21 +57,20 @@ void Get4Pressure(){
 
 void CalcLevels()
 {
-  byte i;
   int16_t cVar;
   Get_RAW_LS();
-  for(i=0;i<4;i++){
+  for(int i=0;i<4;i++){
     cVar=map(curSuspention[i].RAW, LowLevels[i], HighLevels[i], 0, 1000);
     curSuspention[i].Avg=(curSuspention[i].Avg*2+cVar)/3;
     curSuspention[i].Max=(curSuspention[i].Max<cVar)? cVar:(curSuspention[i].Max*5+curSuspention[i].Avg)/6;
     curSuspention[i].Min=(curSuspention[i].Min>cVar)? cVar:(curSuspention[i].Min*5+curSuspention[i].Avg)/6;
     curSuspention[i].Delta=(curSuspention[i].Max-curSuspention[i].Min)/2;
 
-    if(curSuspention[i].Max>102) alertHiFlags[i]++; //сранение с верхним пределом  
-    if(curSuspention[i].Min<-2)  alertLoFlags[i]++; //сранение с нижним пределом
+    if(curSuspention[i].Max>1020) alertHiFlags[i]++; else alertHiFlags[i]=0; //сранение с верхним пределом  
+    if(curSuspention[i].Min<-20)  alertLoFlags[i]++; else alertLoFlags[i]=0; //сранение с нижним пределом
 
-    if((alertHiFlags[i]>5)&&!servicemode) { alertHiFlags[i]=0; cWarningArr.Levels++;}
-    if((alertLoFlags[i]>5)&&!servicemode) { alertLoFlags[i]=0; cWarningArr.Levels++;}
+    if((alertHiFlags[i]>3)&&!servicemode) { alertHiFlags[i]=0; cWarningArr.Levels++;}
+    if((alertLoFlags[i]>3)&&!servicemode) { alertLoFlags[i]=0; cWarningArr.Levels++;}
   }
 }
 
