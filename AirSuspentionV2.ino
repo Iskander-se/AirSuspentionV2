@@ -176,10 +176,10 @@ if(WAIT>0) WAIT--;
   fLevelBain();  // по высотам создание намерения для VAG-блока
   fCompressorTimer();
   GetPressure();
-  CheckWarnings();
-  
-  if(!manual&&!menu&&(tasker1==8||tasker1==16)){
-      fSUBcore();
+    
+  if(tasker1==8||tasker1==16){
+      if(!manual&&!menu)fSUBcore();
+      CheckWarnings();
   }
 
   if(tasker1>16){
