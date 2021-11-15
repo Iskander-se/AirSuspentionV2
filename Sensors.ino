@@ -66,8 +66,8 @@ void CalcLevels()
     if(curSuspention[i].Max>1020) alertHiFlags[i]++; else alertHiFlags[i]=0; //сранение с верхним пределом  
     if(curSuspention[i].Min<-20)  alertLoFlags[i]++; else alertLoFlags[i]=0; //сранение с нижним пределом
 
-    if((alertHiFlags[i]>5)&&!servicemode) { alertHiFlags[i]=0; cWarningArr.Levels++;}
-    if((alertLoFlags[i]>5)&&!servicemode) { alertLoFlags[i]=0; cWarningArr.Levels++;}
+    if((alertHiFlags[i]>3)&&!servicemode) { alertHiFlags[i]=0; cWarningArr.Levels++; tone(piezoPin, 1100, 110);}
+    if((alertLoFlags[i]>3)&&!servicemode) { alertLoFlags[i]=0; cWarningArr.Levels++; tone(piezoPin, 1100, 110);}
   }
 }
 
