@@ -54,16 +54,20 @@ SerialPack SerialReadHU()
   // @vu:1111^
 }
 
+void SerialCurLevelSend2HU(int16_t cLevels[4]) {
+    Serial.print("@l:c:");
+    if(cLevels[0]<15)Serial.print('0'); Serial.print(cLevels[0],HEX);
+    if(cLevels[1]<15)Serial.print('0'); Serial.print(cLevels[1],HEX); 
+    if(cLevels[2]<15)Serial.print('0'); Serial.print(cLevels[2],HEX);
+    if(cLevels[3]<15)Serial.print('0'); Serial.print(cLevels[3],HEX); 
+    Serial.println("^");
+    Serial.flush();
+}
 
 void SerialLevelSend2HU(char nom, int8_t cLevels[4]) {
     Serial.print("@l:");Serial.print(nom);Serial.print(":");
     if(cLevels[0]<15)Serial.print('0'); Serial.print(cLevels[0],HEX);
     if(cLevels[1]<15)Serial.print('0'); Serial.print(cLevels[1],HEX); 
-    if(nom=='c')
-    {
-      if(cLevels[2]<15)Serial.print('0'); Serial.print(cLevels[2],HEX);
-      if(cLevels[3]<15)Serial.print('0'); Serial.print(cLevels[3],HEX); 
-    }
     Serial.println("^");
     Serial.flush();
 }
@@ -75,7 +79,8 @@ void SerialWorkSend2HU(valveSetBstruct ValveSet){
     Serial.print(ValveSet.FR);
     Serial.print(ValveSet.RL);
     Serial.print(ValveSet.RR);
-    Serial.print(ValveSet.WP);
+    if (ValveSet.RELAY == 1 && Pressure.RES > 810) Serial.print("7");
+    else Serial.print(ValveSet.WP);
     Serial.println("^");
     Serial.flush();
 }

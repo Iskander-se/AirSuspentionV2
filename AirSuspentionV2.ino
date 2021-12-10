@@ -186,15 +186,22 @@ int mStep=0, menu=0, WAIT=0;
 void loop() {
   GetSA();
   CalcLevels();
+  
+  if(tasker1%2){
+    for(byte i=0;i<4;i++) curArr[i]=curSuspention[i].Avg/10; 
+    SerialCurLevelSend2HU(curArr);
+  } 
+   
 if(WAIT>0) WAIT--;
 
   fLevelBain();  // по высотам создание намерения для VAG-блока
   fCompressorTimer();
   GetPressure();
-    
+ 
   if(tasker1==8||tasker1==16){
       if(!manual&&!menu)fSUBcore();
       CheckWarnings();
+      
   }
   tasker1++;
   if(tasker1>16){
@@ -258,7 +265,6 @@ if(WAIT>0) WAIT--;
     
     for(byte i=0;i<4;i++) curArr[i]=curSuspention[i].Avg/10; 
     fLCDViewLevelsFbyte(curArr);   
-
     if(servicemode)
     {
       lcd.setCursor(5,1); lcd.print("SEVICE ");
